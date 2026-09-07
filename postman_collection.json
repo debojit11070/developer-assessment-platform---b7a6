@@ -1,0 +1,102 @@
+{
+  "info": {
+    "name": "Developer Assessment Platform API",
+    "description": "REST API for the Developer Assessment & Coding Platform",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000/api/v1" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" },
+    { "key": "assessmentId", "value": "" },
+    { "key": "problemId", "value": "" },
+    { "key": "invitationId", "value": "" },
+    { "key": "attemptId", "value": "" },
+    { "key": "candidateId", "value": "" },
+    { "key": "paymentId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        { "name": "Register (Candidate)", "request": { "method": "POST", "header": [], "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] }, "body": { "mode": "raw", "raw": "{\n  \"email\": \"candidate+demo@assessment.dev\",\n  \"password\": \"Candidate@12345\",\n  \"fullName\": \"Jane Developer\",\n  \"role\": \"CANDIDATE\"\n}", "options": { "raw": { "language": "json" } } } } },
+        { "name": "Register (Company)", "request": { "method": "POST", "header": [], "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] }, "body": { "mode": "raw", "raw": "{\n  \"email\": \"company+demo@assessment.dev\",\n  \"password\": \"Company@12345\",\n  \"fullName\": \"Acme Talent\",\n  \"role\": \"COMPANY\",\n  \"companyName\": \"Acme Talent\"\n}", "options": { "raw": { "language": "json" } } } } },
+        { "name": "Login (Admin demo)", "request": { "method": "POST", "header": [], "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }, "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@assessment.dev\",\n  \"password\": \"Admin@12345\"\n}", "options": { "raw": { "language": "json" } } } } },
+        { "name": "Refresh", "request": { "method": "POST", "header": [], "url": { "raw": "{{baseUrl}}/auth/refresh-token", "host": ["{{baseUrl}}"], "path": ["auth", "refresh-token"] }, "body": { "mode": "raw", "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}", "options": { "raw": { "language": "json" } } } } },
+        { "name": "Logout", "request": { "method": "POST", "header": [], "url": { "raw": "{{baseUrl}}/auth/logout", "host": ["{{baseUrl}}"], "path": ["auth", "logout"] } } }
+      ]
+    },
+    {
+      "name": "Users / Profile",
+      "item": [
+        { "name": "Get Me", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/users/me", "host": ["{{baseUrl}}"], "path": ["users", "me"] } } },
+        { "name": "Update Me", "request": { "method": "PATCH", "header": [], "url": { "raw": "{{baseUrl}}/users/me", "host": ["{{baseUrl}}"], "path": ["users", "me"] }, "body": { "mode": "raw", "raw": "{\n  \"bio\": \"Senior full-stack engineer\",\n  \"avatarUrl\": \"https://example.com/avatar.png\"\n}", "options": { "raw": { "language": "json" } } } } },
+        { "name": "Update Candidate Profile", "request": { "method": "PATCH", "header": [], "url": { "raw": "{{baseUrl}}/users/candidates/me/profile", "host": ["{{baseUrl}}"], "path": ["users", "candidates", "me", "profile"] }, "body": { "mode": "raw", "raw": "{\n  \"headline\": \"Senior Full-stack Engineer\",\n  \"skills\": [\"TypeScript\", \"Node.js\", \"PostgreSQL\"]\n}", "options": { "raw": { "language": "json" } } } } },
+        { "name": "Update Company Profile", "request": { "method": "PATCH", "header": [], "url": { "raw": "{{baseUrl}}/users/companies/me/profile", "host": ["{{baseUrl}}"], "path": ["users", "companies", "me", "profile"] }, "body": { "mode": "raw", "raw": "{\n  \"about\": \"We hire engineers.\"\n}", "options": { "raw": { "language": "json" } } } } }
+      ]
+    },
+    {
+      "name": "Problems",
+      "item": [
+        { "name": "Create (Company/Admin)", "request": { "method": "POST", "header": [], "url": { "raw": "{{baseUrl}}/problems", "host": ["{{baseUrl}}"], "path": ["problems"] }, "body": { "mode": "raw", "raw": "{\n  \"title\": \"Fizz Buzz\",\n  \"description\": \"Print numbers 1..n replacing multiples of 3 with Fizz, 5 with Buzz.\",\n  \"type\": \"CODING\",\n  \"difficulty\": \"EASY\",\n  \"language\": \"javascript\",\n  \"starterCode\": \"function fizzBuzz(n){\\n  // ...\\n}\",\n  \"testCases\": [{ \"input\": \"5\", \"expectedOutput\": \"1,2,Fizz,4,Buzz\" }],\n  \"points\": 10\n}", "options": { "raw": { "language": "json" } } } } },
+        { "name": "List", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/problems?page=1&limit=10&type=MCQ", "host": ["{{baseUrl}}"], "path": ["problems"], "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "10" }, { "key": "type", "value": "MCQ" }] } } },
+        { "name": "Get by ID", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/problems/{{problemId}}", "host": ["{{baseUrl}}"], "path": ["problems", "{{problemId}}"] } } },
+        { "name": "Update", "request": { "method": "PATCH", "header": [], "url": { "raw": "{{baseUrl}}/problems/{{problemId}}", "host": ["{{baseUrl}}"], "path": ["problems", "{{problemId}}"] }, "body": { "mode": "raw", "raw": "{\n  \"points\": 25\n}", "options": { "raw": { "language": "json" } } } } },
+        { "name": "Delete (soft)", "request": { "method": "DELETE", "header": [], "url": { "raw": "{{baseUrl}}/problems/{{problemId}}", "host": ["{{baseUrl}}"], "path": ["problems", "{{problemId}}"] } } }
+      ]
+    },
+    {
+      "name": "Assessments",
+      "item": [
+        { "name": "Create", "request": { "method": "POST", "header": [], "url": { "raw": "{{baseUrl}}/assessments", "host": ["{{baseUrl}}"], "path": ["assessments"] }, "body": { "mode": "raw", "raw": "{\n  \"title\": \"Junior Backend Engineer\",\n  \"description\": \"Backend screening for junior roles\",\n  \"durationMin\": 60,\n  \"passingScore\": 60,\n  \"priceCents\": 1000,\n  \"currency\": \"usd\",\n  \"problems\": [{ \"problemId\": \"{{problemId}}\", \"points\": 10 }]\n}", "options": { "raw": { "language": "json" } } } } },
+        { "name": "List (filters)", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/assessments?search=backend&page=1&limit=10", "host": ["{{baseUrl}}"], "path": ["assessments"], "query": [{ "key": "search", "value": "backend" }, { "key": "page", "value": "1" }, { "key": "limit", "value": "10" }] } } },
+        { "name": "Get by ID", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/assessments/{{assessmentId}}", "host": ["{{baseUrl}}"], "path": ["assessments", "{{assessmentId}}"] } } },
+        { "name": "Publish", "request": { "method": "PATCH", "header": [], "url": { "raw": "{{baseUrl}}/assessments/{{assessmentId}}/status", "host": ["{{baseUrl}}"], "path": ["assessments", "{{assessmentId}}", "status"] }, "body": { "mode": "raw", "raw": "{\n  \"status\": \"PUBLISHED\"\n}", "options": { "raw": { "language": "json" } } } } },
+        { "name": "Update", "request": { "method": "PATCH", "header": [], "url": { "raw": "{{baseUrl}}/assessments/{{assessmentId}}", "host": ["{{baseUrl}}"], "path": ["assessments", "{{assessmentId}}"] }, "body": { "mode": "raw", "raw": "{\n  \"priceCents\": 2000\n}", "options": { "raw": { "language": "json" } } } } },
+        { "name": "Delete (soft)", "request": { "method": "DELETE", "header": [], "url": { "raw": "{{baseUrl}}/assessments/{{assessmentId}}", "host": ["{{baseUrl}}"], "path": ["assessments", "{{assessmentId}}"] } } }
+      ]
+    },
+    {
+      "name": "Invitations + Attempts",
+      "item": [
+        { "name": "Invite Candidate (Company)", "request": { "method": "POST", "header": [], "url": { "raw": "{{baseUrl}}/invitations", "host": ["{{baseUrl}}"], "path": ["invitations"] }, "body": { "mode": "raw", "raw": "{\n  \"assessmentId\": \"{{assessmentId}}\",\n  \"candidateId\": \"{{candidateId}}\",\n  \"expiresInHours\": 72\n}", "options": { "raw": { "language": "json" } } } } },
+        { "name": "My Invitations (Candidate)", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/invitations/me", "host": ["{{baseUrl}}"], "path": ["invitations", "me"] } } },
+        { "name": "Accept Invitation", "request": { "method": "POST", "header": [], "url": { "raw": "{{baseUrl}}/invitations/accept", "host": ["{{baseUrl}}"], "path": ["invitations", "accept"] }, "body": { "mode": "raw", "raw": "{\n  \"invitationId\": \"{{invitationId}}\"\n}", "options": { "raw": { "language": "json" } } } } },
+        { "name": "Start Attempt", "request": { "method": "POST", "header": [], "url": { "raw": "{{baseUrl}}/attempts/start/{{invitationId}}", "host": ["{{baseUrl}}"], "path": ["attempts", "start", "{{invitationId}}"] } } },
+        { "name": "Save Answer", "request": { "method": "POST", "header": [], "url": { "raw": "{{baseUrl}}/attempts/{{attemptId}}/answer", "host": ["{{baseUrl}}"], "path": ["attempts", "{{attemptId}}", "answer"] }, "body": { "mode": "raw", "raw": "{\n  \"problemId\": \"{{problemId}}\",\n  \"mcqOption\": \"O(n)\"\n}", "options": { "raw": { "language": "json" } } } } },
+        { "name": "Submit Attempt", "request": { "method": "POST", "header": [], "url": { "raw": "{{baseUrl}}/attempts/{{attemptId}}/submit", "host": ["{{baseUrl}}"], "path": ["attempts", "{{attemptId}}", "submit"] } } },
+        { "name": "Evaluate (Company)", "request": { "method": "POST", "header": [], "url": { "raw": "{{baseUrl}}/attempts/{{attemptId}}/evaluate", "host": ["{{baseUrl}}"], "path": ["attempts", "{{attemptId}}", "evaluate"] }, "body": { "mode": "raw", "raw": "{\n  \"manualScores\": [{ \"problemId\": \"{{problemId}}\", \"pointsAwarded\": 15, \"feedback\": \"Good approach.\" }]\n}", "options": { "raw": { "language": "json" } } } } },
+        { "name": "List Attempts for Assessment", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/attempts/assessment/{{assessmentId}}/all", "host": ["{{baseUrl}}"], "path": ["attempts", "assessment", "{{assessmentId}}", "all"] } } }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        { "name": "Initiate", "request": { "method": "POST", "header": [], "url": { "raw": "{{baseUrl}}/payments/initiate", "host": ["{{baseUrl}}"], "path": ["payments", "initiate"] }, "body": { "mode": "raw", "raw": "{\n  \"assessmentId\": \"{{assessmentId}}\",\n  \"purpose\": \"ASSESSMENT_FEE\"\n}", "options": { "raw": { "language": "json" } } } },
+        { "name": "Get by ID", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/payments/{{paymentId}}", "host": ["{{baseUrl}}"], "path": ["payments", "{{paymentId}}"] } } },
+        { "name": "My Payments", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/payments/me/list", "host": ["{{baseUrl}}"], "path": ["payments", "me", "list"] } } },
+        { "name": "Success Redirect", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/payments/success?session_id=cs_test_xxx", "host": ["{{baseUrl}}"], "path": ["payments", "success"], "query": [{ "key": "session_id", "value": "cs_test_xxx" }] } } }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        { "name": "List Users", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/admin/users?role=CANDIDATE&page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["admin", "users"], "query": [{ "key": "role", "value": "CANDIDATE" }, { "key": "page", "value": "1" }, { "key": "limit", "value": "20" }] } } },
+        { "name": "Update User Role/Status", "request": { "method": "PATCH", "header": [], "url": { "raw": "{{baseUrl}}/admin/users/{{candidateId}}", "host": ["{{baseUrl}}"], "path": ["admin", "users", "{{candidateId}}"] }, "body": { "mode": "raw", "raw": "{\n  \"status\": \"ACTIVE\"\n}", "options": { "raw": { "language": "json" } } } } },
+        { "name": "Delete User (soft)", "request": { "method": "DELETE", "header": [], "url": { "raw": "{{baseUrl}}/admin/users/{{candidateId}}", "host": ["{{baseUrl}}"], "path": ["admin", "users", "{{candidateId}}"] } } },
+        { "name": "Dashboard Stats", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/admin/dashboard-stats", "host": ["{{baseUrl}}"], "path": ["admin", "dashboard-stats"] } } },
+        { "name": "Audit Logs", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/admin/audit-logs?page=1&limit=50", "host": ["{{baseUrl}}"], "path": ["admin", "audit-logs"], "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "50" }] } } }
+      ]
+    }
+  ]
+}

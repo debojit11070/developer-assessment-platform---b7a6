@@ -1,0 +1,568 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Developer Assessment Platform API",
+    "version": "1.0.0",
+    "description": "Backend API for the Developer Assessment & Coding Platform. Three roles: CANDIDATE, COMPANY, ADMIN."
+  },
+  "servers": [
+    { "url": "http://localhost:5000/api/v1", "description": "Local" },
+    { "url": "https://your-app.vercel.app/api/v1", "description": "Production" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" }
+    },
+    "schemas": {
+      "Success": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "message": { "type": "string" },
+          "data": {}
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": false },
+          "message": { "type": "string" },
+          "errors": {}
+        }
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "required": ["email", "password", "fullName", "role"],
+        "properties": {
+          "email": { "type": "string", "format": "email", "example": "candidate@assessment.dev" },
+          "password": { "type": "string", "minLength": 8, "example": "Candidate@12345" },
+          "fullName": { "type": "string", "example": "Jane Developer" },
+          "role": { "type": "string", "enum": ["CANDIDATE", "COMPANY"] },
+          "companyName": { "type": "string", "example": "Acme Talent", "description": "Required if role=COMPANY" }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string" }
+        }
+      },
+      "RefreshRequest": {
+        "type": "object",
+        "required": ["refreshToken"],
+        "properties": { "refreshToken": { "type": "string" } }
+      },
+      "AuthResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "message": { "type": "string" },
+          "data": {
+            "type": "object",
+            "properties": {
+              "user": { "type": "object" },
+              "tokens": {
+                "type": "object",
+                "properties": {
+                  "accessToken": { "type": "string" },
+                  "refreshToken": { "type": "string" },
+                  "accessExpiresIn": { "type": "string" },
+                  "refreshExpiresIn": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "UpdateMeRequest": {
+        "type": "object",
+        "properties": {
+          "fullName": { "type": "string" },
+          "bio": { "type": "string" },
+          "avatarUrl": { "type": "string", "format": "uri" }
+        }
+      },
+      "UpdateCandidateProfileRequest": {
+        "type": "object",
+        "properties": {
+          "headline": { "type": "string" },
+          "skills": { "type": "array", "items": { "type": "string" } },
+          "githubUrl": { "type": "string", "format": "uri" },
+          "linkedinUrl": { "type": "string", "format": "uri" },
+          "portfolioUrl": { "type": "string", "format": "uri" },
+          "resumeUrl": { "type": "string", "format": "uri" }
+        }
+      },
+      "UpdateCompanyProfileRequest": {
+        "type": "object",
+        "properties": {
+          "companyName": { "type": "string" },
+          "website": { "type": "string", "format": "uri" },
+          "logoUrl": { "type": "string", "format": "uri" },
+          "industry": { "type": "string" },
+          "size": { "type": "string" },
+          "about": { "type": "string" }
+        }
+      },
+      "ProblemCreate": {
+        "type": "object",
+        "required": ["title", "description", "type"],
+        "properties": {
+          "title": { "type": "string", "example": "Two Sum" },
+          "description": { "type": "string" },
+          "type": { "type": "string", "enum": ["MCQ", "WRITTEN", "CODING"] },
+          "difficulty": { "type": "string", "enum": ["EASY", "MEDIUM", "HARD"], "default": "EASY" },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "options": { "type": "array", "items": { "type": "string" }, "description": "For MCQ" },
+          "correctOption": { "type": "string", "description": "For MCQ" },
+          "starterCode": { "type": "string", "description": "For CODING" },
+          "testCases": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "input": { "type": "string" },
+                "expectedOutput": { "type": "string" },
+                "isHidden": { "type": "boolean" }
+              }
+            }
+          },
+          "referenceAnswer": { "type": "string", "description": "For WRITTEN" },
+          "language": { "type": "string", "example": "javascript" },
+          "timeLimitSec": { "type": "integer" },
+          "memoryLimitMb": { "type": "integer" },
+          "points": { "type": "integer", "default": 10 }
+        }
+      },
+      "AssessmentCreate": {
+        "type": "object",
+        "required": ["title", "description", "problems"],
+        "properties": {
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "durationMin": { "type": "integer", "minimum": 5, "maximum": 360, "default": 60 },
+          "passingScore": { "type": "integer", "minimum": 0, "maximum": 100, "default": 60 },
+          "priceCents": { "type": "integer", "minimum": 0, "default": 0 },
+          "currency": { "type": "string", "minLength": 3, "maxLength": 3, "default": "usd" },
+          "problems": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["problemId"],
+              "properties": {
+                "problemId": { "type": "string", "format": "uuid" },
+                "order": { "type": "integer" },
+                "points": { "type": "integer" }
+              }
+            }
+          }
+        }
+      },
+      "AssessmentStatusUpdate": {
+        "type": "object",
+        "required": ["status"],
+        "properties": { "status": { "type": "string", "enum": ["DRAFT", "PUBLISHED", "ARCHIVED"] } }
+      },
+      "InvitationCreate": {
+        "type": "object",
+        "required": ["assessmentId", "candidateId"],
+        "properties": {
+          "assessmentId": { "type": "string", "format": "uuid" },
+          "candidateId": { "type": "string", "format": "uuid" },
+          "expiresInHours": { "type": "integer", "minimum": 1, "maximum": 720, "default": 72 }
+        }
+      },
+      "InvitationRespond": {
+        "type": "object",
+        "required": ["invitationId"],
+        "properties": { "invitationId": { "type": "string", "format": "uuid" } }
+      },
+      "SubmitAnswer": {
+        "type": "object",
+        "required": ["problemId"],
+        "properties": {
+          "problemId": { "type": "string", "format": "uuid" },
+          "mcqOption": { "type": "string" },
+          "writtenAnswer": { "type": "string" },
+          "codeAnswer": { "type": "string" },
+          "codeLanguage": { "type": "string" }
+        }
+      },
+      "EvaluateAttempt": {
+        "type": "object",
+        "properties": {
+          "manualScores": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["problemId", "pointsAwarded"],
+              "properties": {
+                "problemId": { "type": "string", "format": "uuid" },
+                "pointsAwarded": { "type": "integer", "minimum": 0 },
+                "feedback": { "type": "string" }
+              }
+            }
+          }
+        }
+      },
+      "InitiatePayment": {
+        "type": "object",
+        "required": ["assessmentId"],
+        "properties": {
+          "assessmentId": { "type": "string", "format": "uuid" },
+          "purpose": { "type": "string", "enum": ["ASSESSMENT_FEE", "PREMIUM_JOB_POSTING", "OTHER"], "default": "ASSESSMENT_FEE" }
+        }
+      },
+      "AdminUserUpdate": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string", "enum": ["ACTIVE", "SUSPENDED", "PENDING"] },
+          "role": { "type": "string", "enum": ["CANDIDATE", "COMPANY", "ADMIN"] },
+          "fullName": { "type": "string" }
+        }
+      }
+    }
+  },
+  "security": [{ "bearerAuth": [] }],
+  "tags": [
+    { "name": "Auth" },
+    { "name": "Users" },
+    { "name": "Problems" },
+    { "name": "Assessments" },
+    { "name": "Invitations" },
+    { "name": "Attempts" },
+    { "name": "Payments" },
+    { "name": "Admin" }
+  ],
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Register a new account",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RegisterRequest" } } }
+        },
+        "responses": {
+          "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthResponse" } } } },
+          "400": { "description": "Validation error" },
+          "409": { "description": "Email already in use" }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Email/password login",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LoginRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthResponse" } } } },
+          "401": { "description": "Invalid credentials" }
+        }
+      }
+    },
+    "/auth/refresh-token": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Refresh access token",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RefreshRequest" } } }
+        },
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Logout (invalidate refresh token)",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/users/me": {
+      "get": { "tags": ["Users"], "summary": "Get current user", "responses": { "200": { "description": "OK" } } },
+      "patch": {
+        "tags": ["Users"],
+        "summary": "Update current user",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateMeRequest" } } }
+        },
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/users/candidates/me/profile": {
+      "patch": {
+        "tags": ["Users"],
+        "summary": "Update candidate profile (CANDIDATE only)",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateCandidateProfileRequest" } } }
+        },
+        "responses": { "200": { "description": "OK" }, "403": { "description": "Forbidden" } }
+      }
+    },
+    "/users/companies/me/profile": {
+      "patch": {
+        "tags": ["Users"],
+        "summary": "Update company profile (COMPANY only)",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateCompanyProfileRequest" } } }
+        },
+        "responses": { "200": { "description": "OK" }, "403": { "description": "Forbidden" } }
+      }
+    },
+    "/problems": {
+      "get": {
+        "tags": ["Problems"],
+        "summary": "List problems (public)",
+        "security": [],
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 10, "maximum": 100 } },
+          { "name": "search", "in": "query", "schema": { "type": "string" } },
+          { "name": "type", "in": "query", "schema": { "type": "string", "enum": ["MCQ", "WRITTEN", "CODING"] } },
+          { "name": "difficulty", "in": "query", "schema": { "type": "string", "enum": ["EASY", "MEDIUM", "HARD"] } },
+          { "name": "sortBy", "in": "query", "schema": { "type": "string", "enum": ["createdAt", "title", "difficulty"], "default": "createdAt" } },
+          { "name": "order", "in": "query", "schema": { "type": "string", "enum": ["asc", "desc"], "default": "desc" } }
+        ],
+        "responses": { "200": { "description": "OK" } }
+      },
+      "post": {
+        "tags": ["Problems"],
+        "summary": "Create problem (COMPANY/ADMIN)",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemCreate" } } }
+        },
+        "responses": { "201": { "description": "Created" }, "403": { "description": "Forbidden" } }
+      }
+    },
+    "/problems/{id}": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "get": { "tags": ["Problems"], "summary": "Get problem", "security": [], "responses": { "200": { "description": "OK" }, "404": { "description": "Not found" } } },
+      "patch": {
+        "tags": ["Problems"],
+        "summary": "Update problem (owner only)",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemCreate" } } }
+        },
+        "responses": { "200": { "description": "OK" }, "403": { "description": "Forbidden" }, "404": { "description": "Not found" } }
+      },
+      "delete": { "tags": ["Problems"], "summary": "Soft delete problem (owner only)", "responses": { "200": { "description": "OK" } } }
+    },
+    "/assessments": {
+      "get": {
+        "tags": ["Assessments"],
+        "summary": "List assessments",
+        "security": [],
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 10 } },
+          { "name": "search", "in": "query", "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["DRAFT", "PUBLISHED", "ARCHIVED"] } },
+          { "name": "minPrice", "in": "query", "schema": { "type": "integer" } },
+          { "name": "maxPrice", "in": "query", "schema": { "type": "integer" } },
+          { "name": "sortBy", "in": "query", "schema": { "type": "string", "enum": ["createdAt", "title", "priceCents"] } },
+          { "name": "order", "in": "query", "schema": { "type": "string", "enum": ["asc", "desc"] } }
+        ],
+        "responses": { "200": { "description": "OK" } }
+      },
+      "post": {
+        "tags": ["Assessments"],
+        "summary": "Create assessment (COMPANY/ADMIN)",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AssessmentCreate" } } }
+        },
+        "responses": { "201": { "description": "Created" }, "400": { "description": "Invalid problems" } }
+      }
+    },
+    "/assessments/{id}": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "get": { "tags": ["Assessments"], "summary": "Get assessment", "security": [], "responses": { "200": { "description": "OK" } } },
+      "patch": {
+        "tags": ["Assessments"],
+        "summary": "Update assessment",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AssessmentCreate" } } }
+        },
+        "responses": { "200": { "description": "OK" } }
+      },
+      "delete": { "tags": ["Assessments"], "summary": "Soft delete assessment", "responses": { "200": { "description": "OK" } } }
+    },
+    "/assessments/{id}/status": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "patch": {
+        "tags": ["Assessments"],
+        "summary": "Publish/archive/draft",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AssessmentStatusUpdate" } } }
+        },
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/invitations": {
+      "post": {
+        "tags": ["Invitations"],
+        "summary": "Invite a candidate to an assessment (COMPANY/ADMIN)",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/InvitationCreate" } } }
+        },
+        "responses": { "201": { "description": "Created" } }
+      }
+    },
+    "/invitations/me": {
+      "get": { "tags": ["Invitations"], "summary": "List my invitations (CANDIDATE)", "responses": { "200": { "description": "OK" } } }
+    },
+    "/invitations/accept": {
+      "post": {
+        "tags": ["Invitations"],
+        "summary": "Accept an invitation (CANDIDATE)",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/InvitationRespond" } } }
+        },
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/invitations/decline": {
+      "post": {
+        "tags": ["Invitations"],
+        "summary": "Decline an invitation (CANDIDATE)",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/InvitationRespond" } } }
+        },
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/attempts/start/{invitationId}": {
+      "parameters": [{ "name": "invitationId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "post": { "tags": ["Attempts"], "summary": "Start attempt for an accepted invitation", "responses": { "201": { "description": "OK" } } }
+    },
+    "/attempts/assessment/{assessmentId}/me": {
+      "parameters": [{ "name": "assessmentId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "get": { "tags": ["Attempts"], "summary": "Get my attempt for an assessment", "responses": { "200": { "description": "OK" } } }
+    },
+    "/attempts/{attemptId}/answer": {
+      "parameters": [{ "name": "attemptId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "post": {
+        "tags": ["Attempts"],
+        "summary": "Save/update an answer",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SubmitAnswer" } } }
+        },
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/attempts/{attemptId}/submit": {
+      "parameters": [{ "name": "attemptId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "post": { "tags": ["Attempts"], "summary": "Submit attempt (auto-grades MCQs)", "responses": { "200": { "description": "OK" } } }
+    },
+    "/attempts/{attemptId}/evaluate": {
+      "parameters": [{ "name": "attemptId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "post": {
+        "tags": ["Attempts"],
+        "summary": "Manual evaluate (COMPANY/ADMIN)",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EvaluateAttempt" } } }
+        },
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/attempts/assessment/{assessmentId}/all": {
+      "parameters": [{ "name": "assessmentId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "get": { "tags": ["Attempts"], "summary": "List all attempts for assessment (owner only)", "responses": { "200": { "description": "OK" } } }
+    },
+    "/payments/initiate": {
+      "post": {
+        "tags": ["Payments"],
+        "summary": "Create Stripe Checkout session",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/InitiatePayment" } } }
+        },
+        "responses": { "201": { "description": "OK" } }
+      }
+    },
+    "/payments/{id}": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "get": { "tags": ["Payments"], "summary": "Get payment", "responses": { "200": { "description": "OK" } } }
+    },
+    "/payments/me/list": {
+      "get": { "tags": ["Payments"], "summary": "List my payments", "responses": { "200": { "description": "OK" } } }
+    },
+    "/payments/success": {
+      "parameters": [{ "name": "session_id", "in": "query", "required": true, "schema": { "type": "string" } }],
+      "get": { "tags": ["Payments"], "summary": "Stripe success redirect", "security": [], "responses": { "200": { "description": "OK" } } }
+    },
+    "/payments/cancel": {
+      "parameters": [{ "name": "session_id", "in": "query", "required": true, "schema": { "type": "string" } }],
+      "get": { "tags": ["Payments"], "summary": "Stripe cancel redirect", "security": [], "responses": { "200": { "description": "OK" } } }
+    },
+    "/payments/webhook": {
+      "post": { "tags": ["Payments"], "summary": "Stripe webhook", "security": [], "responses": { "200": { "description": "OK" } } }
+    },
+    "/admin/users": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "List users (ADMIN)",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20 } },
+          { "name": "search", "in": "query", "schema": { "type": "string" } },
+          { "name": "role", "in": "query", "schema": { "type": "string", "enum": ["CANDIDATE", "COMPANY", "ADMIN"] } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["ACTIVE", "SUSPENDED", "PENDING"] } }
+        ],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/admin/users/{id}": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "patch": {
+        "tags": ["Admin"],
+        "summary": "Update user role/status",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AdminUserUpdate" } } }
+        },
+        "responses": { "200": { "description": "OK" } }
+      },
+      "delete": { "tags": ["Admin"], "summary": "Soft delete user", "responses": { "200": { "description": "OK" } } }
+    },
+    "/admin/dashboard-stats": {
+      "get": { "tags": ["Admin"], "summary": "Dashboard stats", "responses": { "200": { "description": "OK" } } }
+    },
+    "/admin/audit-logs": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Audit logs",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } },
+          { "name": "actorId", "in": "query", "schema": { "type": "string", "format": "uuid" } },
+          { "name": "resource", "in": "query", "schema": { "type": "string" } },
+          { "name": "action", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "OK" } }
+      }
+    }
+  }
+}

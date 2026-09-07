@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.env
+.env.local
+.env.production
+.DS_Store
+*.log
+.vercel
+.tsbuildinfo
+
+# Markdown files (except README.md) — assignment reference docs
+/idea-hub.md
+/project_requirements.md
+/timeline-breakdown.md
+/Node.js TypeScript Project Setup & Vercel Deployment Guide.md

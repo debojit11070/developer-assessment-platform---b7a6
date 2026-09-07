@@ -1,131 +1,200 @@
-# 🚀 B7A6 Backend Project Assignment
+# Developer Assessment Platform — Backend API
 
-> 💡 **Note:** This is a **backend-focused** assignment. You will build a robust, scalable, and secure RESTful API. No frontend UI is required; all functionality must be demonstrated via API testing tools like Postman or Thunder Client.
+A robust, scalable, secure REST API for a **Developer Assessment & Coding Platform** (B7A6 assignment). Built with **Node.js, TypeScript, Express.js, PostgreSQL + Prisma, Stripe**, and **Vercel-ready** (TSUP build output).
 
----
+The platform models three distinct primary roles:
 
-## 🔍 Find Your Assignment 
-
-> 💡 Check your Student ID by clicking your **profile image** on the [Programming Hero Website](https://web.programming-hero.com/profile).
-
-| Last Digit of Student ID | Assignment |
-|:------------------------:|:-----------|
-| **1** | **Courier & Logistics Platform** 🚚 |
-| **2** | **Blood Donation & Emergency Platform** 🩸 |
-| **3** | **Load Shedding & Power Management** ⚡ |
-| **4** | **Developer Assessment Platform** 💻 |
-| **5** | **Emergency Ambulance Dispatch** 🚑 |
-| **6** | **Housing & Roommate Platform** 🏠 |
-| **7** | **Field Service Management** 🔧 |
-| **8** | **Project Management SaaS** 📋 |
-| **9** | **University Management System** 🎓 |
-| **0** | **City Complaint & Service Platform** 🏙️ |
-
-> 📚 **Explore the full Idea Hub:** [Project Idea Hub](https://github.com/Apollo-Level2-Web-Dev/B7A6/blob/main/idea-hub.md)
-
-> 💡 **Note:** You may customize the selected project or choose a completely unique project outside this list. However, regular e-commerce clones or projects already covered in this course are **not allowed**. The core problem domain, the 3-role requirement, and the overall project complexity must strictly meet our expectations.
+| Role | Purpose |
+| --- | --- |
+| **CANDIDATE** | Browse published assessments, accept invitations, take timed attempts, get evaluated. |
+| **COMPANY** | Build a problem bank, compose assessments, invite candidates, review/evaluate attempts. |
+| **ADMIN** | Manage users (role/status/soft-delete), view dashboard, browse audit logs. |
 
 ---
 
-## ⚠️ Mandatory Requirements
+## Tech Stack
 
-> [!CAUTION]
-> **MANDATORY - READ CAREFULLY**
-> 
-> The following requirements are **strictly mandatory**. Failure to complete any of these may result in significant mark deductions or **0 marks** for the affected section:
-> 
-> 1. **API Documentation**: Share a complete Postman Collection or Swagger/OpenAPI documentation covering all important endpoints.
-> 2. **Consistent API Responses**: All APIs must return a structured JSON response:
->    - **Success**: `{ "success": true, "message": "Operation successful", "data": {} }`
->    - **Error**: `{ "success": false, "message": "Something went wrong", "errors": [] }`
-> 3. **Commits**: Minimum **20 meaningful** backend commits with descriptive messages (e.g., `feat:`, `fix:`, `docs:`).
-> 4. **Input Validation**: Server-side validation (Zod/Joi) is required on all applicable endpoints with proper error messages.
-> 5. **Authentication & Authorization**: Implement authentication (Email/Password + GCP Social Login) and strict role-based authorization for **3 distinct roles**.
-> 6. **Admin Credentials**: Provide working demo admin email and password for evaluation.
-> 7. **Payment Integration**: Must integrate **bKash, Stripe, or SSLCommerz** for real payment processing. Simulated/fake payments are **NOT** accepted.
-> 8. **Database**: Use **PostgreSQL with Prisma**, implementing proper relationships, constraints, indexing, and transactions.
-> 9. **Deployment**: Provide a working live API URL (e.g., Vercel Serverless Functions or Render).
-> 10. **Video Explanation**: Submit a 5–10 minute API walkthrough video.
+| Layer | Tech |
+| --- | --- |
+| Runtime | Node.js 20+, TypeScript, Express.js |
+| ORM / DB | PostgreSQL + Prisma |
+| Validation | Zod |
+| Auth | JWT (access + refresh), bcryptjs |
+| Payments | Stripe (Checkout Sessions + webhooks) |
+| Security | Helmet, CORS, express-rate-limit |
+| Build | TSUP (ESM + CJS shim) |
+| Deployment | Vercel Serverless (vercel.json) |
 
 ---
 
-## 📊 Marks Distribution
+## Quick start
 
-| # | Category | Weight | Details |
-|:-:|:---------|:------:|:--------|
-| 1 | API Design & Documentation | 15% | RESTful design, endpoint structure, Postman/Swagger docs |
-| 2 | Database Design & Schema | 15% | Prisma schema, relationships, constraints, migrations, seed data |
-| 3 | Authentication & Authorization | 15% | Auth (Email + GCP), 3 roles, JWT/session handling, protected routes |
-| 4 | Core Functionality & Business Logic | 20% | CRUD, workflows, status management, role-based operations |
-| 5 | Error Handling & Validation | 10% | Input validation, structured errors, 404 handling, edge cases |
-| 6 | Payment Integration | 10% | bKash/Stripe/SSLCommerz integration, payment flow, status tracking |
-| 7 | Performance & Code Quality | 5% | Indexing, Redis caching, modular architecture, clean code |
-| 8 | Deployment | 5% | Working production API, environment configuration, DB connection |
-| 9 | Commit History | 2% | 20 meaningful backend commits |
-| 10 | Video Explanation | 3% | 5–10 minute API walkthrough |
-| **Total** | | **100%** | |
+1. **Install dependencies**
 
----
+   ```bash
+   npm install
+   ```
 
-## 📋 Project Requirements
+2. **Configure environment**
 
-> ⏱️ **Detailed Guidelines:** Please read the complete project requirements, tech stack, and API rules here:  
-> 👉 [Project Requirements & API Guidelines](https://github.com/Apollo-Level2-Web-Dev/B7A6/blob/main/project_requirements.md)
+   ```bash
+   cp .env.example .env
+   # Fill in DATABASE_URL, JWT secrets, and STRIPE keys
+   ```
 
----
+3. **Set up the database**
 
-## 📅 Timeline: 5-Day Work Breakdown
+   ```bash
+   npm run prisma:generate
+   npm run prisma:migrate
+   npm run seed
+   ```
 
-> ⏱️ **Recommended Schedule:** Maintain steady progress to avoid last-minute stress and ensure a clean Git history.  
-> 👉 [View the 5-Day Work Breakdown](https://github.com/Apollo-Level2-Web-Dev/B7A6/blob/main/timeline-breakdown.md)
+4. **Start in development**
 
----
+   ```bash
+   npm run dev
+   ```
 
-## 🗓️ Submission Deadlines
+5. **Build & run (production)**
 
-| Deadline | Maximum Marks |
-|:---------|:-------------:|
-| **September 07, 2026, 11:59 PM** | 60 Marks |
-| **September 08, 2026, 11:59 PM** | 50 Marks |
-| **September 09, 2026 – September 23, 2026, 11:59 PM** | 30 Marks |
+   ```bash
+   npm run build
+   npm start
+   ```
 
 ---
 
-## 📦 What to Submit
+## Demo / Admin Credentials (created by `npm run seed`)
 
-Please format your submission exactly like this example:
+| Role | Email | Password |
+| --- | --- | --- |
+| ADMIN | `admin@assessment.dev` | `Admin@12345` |
+| COMPANY | `company@assessment.dev` | `Company@12345` |
+| CANDIDATE | `candidate@assessment.dev` | `Candidate@12345` |
 
-```text
-Project Name    : Courier & Logistics Platform
-Backend Repo    : https://github.com/your-username/courier-backend
-Live API        : https://courier-api.vercel.app
-API Docs        : https://documenter.getpostman.com/view/xyz
-Demo Video      : https://drive.google.com/file/d/xyz/view
-Admin Email     : admin@courier.com
-Admin Password  : ********
+> Tip: the seed also creates a few seed problems owned by the company account so you can immediately publish an assessment.
+
+---
+
+## API surface (28 endpoints)
+
+All endpoints are mounted under `/api/v1`. All responses use:
+
+```jsonc
+// Success
+{ "success": true, "message": "OK", "data": { /* ... */ } }
+
+// Error
+{ "success": false, "message": "Something went wrong", "errors": { /* ... */ } }
 ```
 
-> ⚠️ **Security Warning:** Never submit personal passwords or production secrets. Create dedicated, secure demo credentials specifically for evaluation.
+### Auth
+- `POST   /auth/register`            — Register a CANDIDATE or COMPANY
+- `POST   /auth/login`               — Email/password login
+- `POST   /auth/refresh-token`       — Refresh access token
+- `POST   /auth/logout`              — Invalidate refresh token
+
+### Users / Profile
+- `GET    /users/me`                 — Current user profile (with role-specific sub-profile)
+- `PATCH  /users/me`                 — Update basic profile fields
+- `PATCH  /users/candidates/me/profile`  — Update candidate profile (skills, headline, links)
+- `PATCH  /users/companies/me/profile`   — Update company profile
+
+### Problems
+- `POST   /problems`                 — Create problem (COMPANY/ADMIN)
+- `GET    /problems`                 — List with `?page&limit&search&type&difficulty&sortBy&order`
+- `GET    /problems/:id`             — Get problem (correct answers hidden for non-admins)
+- `PATCH  /problems/:id`             — Update (owner only)
+- `DELETE /problems/:id`             — Soft delete (owner only)
+
+### Assessments
+- `POST   /assessments`              — Create assessment with linked problems
+- `GET    /assessments`              — List published (filters: search, status, price range, sortBy)
+- `GET    /assessments/:id`          — Get assessment (with problems)
+- `PATCH  /assessments/:id`          — Update assessment
+- `PATCH  /assessments/:id/status`   — Publish / archive / draft
+- `DELETE /assessments/:id`          — Soft delete
+
+### Invitations
+- `POST   /invitations`              — Company invites a candidate
+- `GET    /invitations/me`           — List my invitations (candidate)
+- `POST   /invitations/accept`       — Accept
+- `POST   /invitations/decline`      — Decline
+
+### Attempts
+- `POST   /attempts/start/:invitationId`           — Start an attempt
+- `GET    /attempts/assessment/:assessmentId/me`   — My attempt for an assessment
+- `POST   /attempts/:attemptId/answer`             — Save/update an answer
+- `POST   /attempts/:attemptId/submit`             — Submit (auto-grades MCQs)
+- `POST   /attempts/:attemptId/evaluate`           — Manual evaluation
+- `GET    /attempts/assessment/:assessmentId/all`  — List all attempts (owner only)
+
+### Payments
+- `POST   /payments/initiate`         — Create Stripe Checkout session
+- `GET    /payments/:id`             — Track payment status
+- `GET    /payments/me/list`         — My payments
+- `GET    /payments/success?session_id=...` / `/payments/cancel?session_id=...`
+- `POST   /payments/webhook`         — Stripe webhook (raw body, signature-checked)
+
+### Admin
+- `GET    /admin/users`              — List users (filter: role, status, search)
+- `PATCH  /admin/users/:id`          — Update role / status
+- `DELETE /admin/users/:id`          — Soft delete a user
+- `GET    /admin/dashboard-stats`    — Counts, revenue, recent signups, attempt status breakdown
+- `GET    /admin/audit-logs`         — System audit trail
+
+> Total: **28 endpoints** (well over the minimum 20 required).
 
 ---
 
-## 🎥 Video Explanation Guide
+## Architecture
 
-**Duration:** 5–10 minutes  
-**Language:** English or Bengali  
+```
+src/
+├── server.ts                 # Entry point (Vercel + local)
+├── app/
+│   ├── app.ts                # Express factory
+│   ├── middlewares/          # auth, error, rate-limit, validation
+│   ├── modules/              # feature modules (routes/controller/service/validation)
+│   └── utils/                # JWT, response, errors
+├── config/
+│   ├── env.ts                # env loading
+│   └── prisma.ts             # shared PrismaClient
+└── …
+```
 
-**What to Cover:**
-1. **Project Overview & Architecture**: Briefly explain the project name, the problem it solves, and your backend architecture (Routes → Controllers → Services → Prisma).
-2. **Demonstrate All 3 Roles**: Use **Postman / Thunder Client** to demonstrate actual API requests for all three roles. Show that a role *cannot* access endpoints belonging to another role (e.g., returning a `403 Forbidden`).
-3. **Demonstrate CRUD**: Show meaningful CRUD operations via API requests (POST, GET, PATCH/PUT, DELETE) with clear request bodies and responses.
-4. **Demonstrate Validation & Error Handling**: Intentionally trigger a validation error (e.g., invalid email format) and show the structured error response. Show a `404 Not Found` or `401 Unauthorized` example.
-5. **Demonstrate Payment Flow**: Walk through the payment API flow: Create Payment Session → Redirect/Response → Success/Cancel handling → Backend verification → Payment status update in the database.
-6. **Explain One Technical Challenge**: Briefly explain one meaningful problem you solved (e.g., Complex Prisma transactions, GCP Social Login integration, Redis caching strategy, or payment webhook handling).
-
-**Recording Options:**
-- **Loom**: Record and share the link directly.
-- **OBS**: Record and upload to Google Drive (ensure sharing is set to "Anyone with the link" → Viewer).
+Each module follows **routes → controller → (service) → Prisma**. RBAC is centralised in the `authorize(...)` middleware.
 
 ---
 
-> 🚀 **Final Goal:** Build a backend that is more than just a collection of endpoints. Your project should demonstrate a clear, logical path from **Problem → Requirements → Database Design → API Design → Auth → Business Logic → Validation → Payment → Testing → Deployment**. Build a rock-solid backend you can explain, defend, and be proud of!
+## Highlights / Engineering decisions
+
+- **Transactions everywhere they matter.** Creating an assessment, registering a user, evaluating an attempt and starting an attempt all run inside `prisma.$transaction(...)` to prevent partial writes.
+- **Soft deletes.** `deletedAt` on every major entity (User, Problem, Assessment) — never hard-delete.
+- **Audit log trail.** Critical actions (login, role change, assessment publish, payment success, attempt events) write into the `AuditLog` table.
+- **Auto MCQ grading + manual grading.** MCQs auto-grade on submission; coding/written problems are evaluated by the owning company via the `evaluate` endpoint.
+- **Idempotent attempt start.** Re-starting an attempt for the same invitation returns the existing attempt.
+- **Stripe in real or mock mode.** If `STRIPE_SECRET_KEY` is missing the initiate endpoint auto-marks the payment as `SUCCEEDED` so the API stays demoable offline. Stripe webhooks verify the `stripe-signature` header.
+- **Vercel-safe Stripe webhook.** The raw body parser is registered *only* on `/api/v1/payments/webhook`, ahead of the global JSON parser, so signature verification works in production.
+- **Standardised JSON envelopes.** A `ok(...) / created(...) / fail(...)` helper is used in every controller.
+- **Rate limiting** on auth and payment endpoints to prevent abuse.
+- **Helmet + CORS** configured out of the box.
+
+---
+
+## Deployment (Vercel)
+
+1. Push the repo to GitHub.
+2. Import in Vercel; the `vercel.json` will route every request to `dist/server.js` (TSUP output).
+3. Set environment variables (`DATABASE_URL`, `JWT_*`, `STRIPE_*`, `APP_BASE_URL`) in the project settings.
+4. In your database provider, allow connections from Vercel IPs (or use the connection string with pooling).
+5. Deploy.
+
+---
+
+## Testing the API
+
+A ready-to-import Postman collection is included in `postman_collection.json`. It already defines the `{{baseUrl}}`, `{{accessToken}}` and entity id variables — just sign in and the rest works.
+
+`openapi.json` is a minimal OpenAPI 3.0 spec that you can import into Swagger UI or Stoplight.

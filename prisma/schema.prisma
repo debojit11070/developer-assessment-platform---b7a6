@@ -1,0 +1,292 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider     = "postgresql"
+  relationMode = "prisma"
+}
+
+enum UserRole {
+  CANDIDATE
+  COMPANY
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  PENDING
+}
+
+enum AssessmentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum QuestionType {
+  MCQ
+  WRITTEN
+  CODING
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  EXPIRED
+  EVALUATED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentPurpose {
+  ASSESSMENT_FEE
+  PREMIUM_JOB_POSTING
+  OTHER
+}
+
+model User {
+  id              String     @id @default(uuid())
+  email           String     @unique
+  passwordHash    String
+  fullName        String
+  role            UserRole
+  status          UserStatus @default(ACTIVE)
+  avatarUrl       String?
+  bio             String?
+  refreshToken    String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  deletedAt       DateTime?
+
+  // Relations
+  candidateProfile CandidateProfile?
+  companyProfile   CompanyProfile?
+
+  createdProblems   Problem[]         @relation("ProblemCreatedBy")
+  createdAssessments Assessment[]     @relation("AssessmentCreatedBy")
+  invitations       Invitation[]      @relation("InvitedCandidate")
+  attempts          Attempt[]
+  payments          Payment[]
+  auditLogs         AuditLog[]        @relation("ActorAuditLogs")
+
+  @@index([role])
+  @@index([status])
+}
+
+model CandidateProfile {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  headline      String?
+  skills        String[] // PostgreSQL text[]
+  githubUrl     String?
+  linkedinUrl   String?
+  portfolioUrl  String?
+  resumeUrl     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model CompanyProfile {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName String
+  website     String?
+  logoUrl     String?
+  industry    String?
+  size        String?
+  about       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([companyName])
+}
+
+model Problem {
+  id              String     @id @default(uuid())
+  title           String
+  description     String     @db.Text
+  type            QuestionType
+  difficulty      Difficulty
+  tags            String[]
+  timeLimitSec    Int?       // for coding problems
+  memoryLimitMb   Int?
+  starterCode     String?    @db.Text
+  testCases       Json?      // [{input, expectedOutput, isHidden}]
+  referenceAnswer String?    @db.Text // for written questions
+  options         String[]   // for MCQ
+  correctOption   String?    // for MCQ
+  points          Int        @default(10)
+  language        String?    // for coding (e.g. "javascript")
+  createdById     String
+  createdBy       User       @relation("ProblemCreatedBy", fields: [createdById], references: [id])
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  deletedAt       DateTime?
+
+  assessmentProblems AssessmentProblem[]
+
+  @@index([type])
+  @@index([difficulty])
+  @@index([deletedAt])
+}
+
+model Assessment {
+  id            String           @id @default(uuid())
+  title         String
+  description   String           @db.Text
+  status        AssessmentStatus @default(DRAFT)
+  durationMin   Int              @default(60)
+  passingScore  Int              @default(60)
+  priceCents    Int              @default(0)
+  currency      String           @default("usd")
+  createdById   String
+  createdBy     User             @relation("AssessmentCreatedBy", fields: [createdById], references: [id])
+  publishedAt   DateTime?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  deletedAt     DateTime?
+
+  problems   AssessmentProblem[]
+  invitations Invitation[]
+  attempts   Attempt[]
+  payments   Payment[]
+
+  @@index([status])
+  @@index([createdById])
+  @@index([deletedAt])
+}
+
+model AssessmentProblem {
+  id           String     @id @default(uuid())
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  problemId    String
+  problem      Problem    @relation(fields: [problemId], references: [id])
+  order        Int        @default(0)
+  points       Int        @default(10)
+
+  @@unique([assessmentId, problemId])
+  @@index([assessmentId])
+}
+
+model Invitation {
+  id           String           @id @default(uuid())
+  assessmentId String
+  assessment   Assessment       @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  candidateId  String
+  candidate    User             @relation("InvitedCandidate", fields: [candidateId], references: [id])
+  status       InvitationStatus @default(PENDING)
+  invitedById  String
+  invitedAt    DateTime         @default(now())
+  expiresAt    DateTime
+  attempt      Attempt?
+
+  @@unique([assessmentId, candidateId])
+  @@index([candidateId])
+  @@index([status])
+}
+
+model Attempt {
+  id           String        @id @default(uuid())
+  invitationId String        @unique
+  invitation   Invitation    @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  candidateId  String
+  candidate    User          @relation(fields: [candidateId], references: [id])
+  assessmentId String
+  assessment   Assessment    @relation(fields: [assessmentId], references: [id])
+  status       AttemptStatus @default(IN_PROGRESS)
+  startedAt    DateTime      @default(now())
+  expiresAt    DateTime
+  submittedAt  DateTime?
+  evaluatedAt  DateTime?
+  score        Int?
+  totalPoints  Int?
+  passed       Boolean?
+  answers      Answer[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([candidateId])
+  @@index([assessmentId])
+  @@index([status])
+}
+
+model Answer {
+  id            String  @id @default(uuid())
+  attemptId     String
+  attempt       Attempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  problemId     String
+  mcqOption     String?
+  writtenAnswer String?  @db.Text
+  codeAnswer    String?  @db.Text
+  codeLanguage  String?
+  isCorrect     Boolean?
+  pointsAwarded Int      @default(0)
+  feedback      String?  @db.Text
+  submittedAt   DateTime @default(now())
+
+  @@unique([attemptId, problemId])
+  @@index([attemptId])
+}
+
+model Payment {
+  id                String          @id @default(uuid())
+  userId            String
+  user              User            @relation(fields: [userId], references: [id])
+  assessmentId      String?
+  assessment        Assessment?     @relation(fields: [assessmentId], references: [id])
+  purpose           PaymentPurpose
+  amountCents       Int
+  currency          String          @default("usd")
+  status            PaymentStatus   @default(PENDING)
+  stripeSessionId   String?         @unique
+  stripePaymentId   String?
+  checkoutUrl       String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  actorId   String?
+  actor     User?    @relation("ActorAuditLogs", fields: [actorId], references: [id])
+  action    String   // e.g. "user.role.changed"
+  resource  String   // e.g. "user", "assessment"
+  resourceId String?
+  meta      Json?
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([actorId])
+  @@index([action])
+  @@index([resource])
+  @@index([createdAt])
+}
