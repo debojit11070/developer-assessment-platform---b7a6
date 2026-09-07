@@ -15,5 +15,4 @@ export default defineConfig({
     "@prisma/adapter-neon",
     "@neondatabase/serverless",
   ],
-  noExternal: [],
 });
