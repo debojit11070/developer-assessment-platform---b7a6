@@ -9,4 +9,11 @@ export default defineConfig({
   bundle: true,
   splitting: false,
   sourcemap: true,
+  external: [
+    "@prisma/client",
+    ".prisma/client",
+    "@prisma/adapter-neon",
+    "@neondatabase/serverless",
+  ],
+  noExternal: [],
 });
