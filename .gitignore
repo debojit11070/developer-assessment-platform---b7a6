@@ -13,3 +13,5 @@ dist/
 /project_requirements.md
 /timeline-breakdown.md
 /Node.js TypeScript Project Setup & Vercel Deployment Guide.md
+
+.vercel

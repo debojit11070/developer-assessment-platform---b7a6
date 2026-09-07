@@ -1,11 +1,5 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
-import ws from "ws";
-
-if (typeof WebSocket === "undefined") {
-  // @ts-expect-error - global WebSocket polyfill for Node
-  globalThis.WebSocket = ws;
-}
 
 function buildClient(): PrismaClient {
   const url = process.env.DATABASE_URL;
