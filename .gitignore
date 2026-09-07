@@ -1,4 +1,8 @@
 node_modules/
+tmp-*.html
+tmp-*.log
+tmp-*.txt
+
 dist/
 .env
 .env.local
