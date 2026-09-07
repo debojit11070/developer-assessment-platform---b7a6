@@ -3,10 +3,11 @@
   "version": "1.0.0",
   "description": "Backend API for a Developer Assessment & Coding Platform (Express + TS + Prisma + Stripe + Vercel).",
   "main": "dist/server.js",
+  "type": "module",
   "scripts": {
     "dev": "tsx watch --env-file=.env src/server.ts",
     "build": "tsup",
-    "start": "node dist/server.cjs",
+    "start": "node dist/server.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev --name init",
     "prisma:deploy": "prisma migrate deploy",
