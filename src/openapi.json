@@ -6,8 +6,8 @@
     "description": "Backend API for the Developer Assessment & Coding Platform. Three roles: CANDIDATE, COMPANY, ADMIN."
   },
   "servers": [
-    { "url": "http://localhost:5000/api/v1", "description": "Local" },
-    { "url": "https://your-app.vercel.app/api/v1", "description": "Production" }
+    { "url": "https://developer-assessment-platform.vercel.app/api/v1", "description": "Production" },
+    { "url": "http://localhost:5000/api/v1", "description": "Local" }
   ],
   "components": {
     "securitySchemes": {
