@@ -23,16 +23,27 @@ declare global {
 export function auth(req: Request, _res: Response, next: NextFunction): void {
   const header = req.headers.authorization;
   if (!header || !header.startsWith("Bearer ")) {
-    throw new UnauthorizedError("Missing or invalid Authorization header");
+    next(new UnauthorizedError("Missing or invalid Authorization header"));
+    return;
   }
   const token = header.split(" ")[1];
+  let payload: AuthPayload;
   try {
-    const payload = jwt.verify(token, config.jwt.accessSecret) as AuthPayload;
-    req.user = payload;
-    next();
+    payload = jwt.verify(token, config.jwt.accessSecret) as AuthPayload;
   } catch {
-    throw new UnauthorizedError("Invalid or expired token");
+    next(new UnauthorizedError("Invalid or expired token"));
+    return;
   }
+  prisma.user
+    .findUnique({ where: { id: payload.sub }, select: { status: true, deletedAt: true } })
+    .then((user) => {
+      if (!user || user.deletedAt || user.status !== "ACTIVE") {
+        next(new UnauthorizedError("Account is not active"));
+        return;
+      }
+      req.user = payload;
+      next();
+    }, next);
 }
 
 export function authorize(...allowed: UserRole[]) {

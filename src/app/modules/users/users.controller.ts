@@ -59,10 +59,12 @@ export async function getCandidateProfile(req: Request, res: Response): Promise<
 
 export async function updateCandidateProfile(req: Request, res: Response): Promise<void> {
   if (!req.user) throw new NotFoundError();
-  const updated = await prisma.candidateProfile.upsert({
+  // Registration always creates a profile row for CANDIDATE users, so this is an
+  // update, not an upsert — `upsert` would validate `create`'s required fields
+  // even though the row already exists and only `update` would ever run.
+  const updated = await prisma.candidateProfile.update({
     where: { userId: req.user.sub },
-    create: { userId: req.user.sub, ...req.body },
-    update: req.body,
+    data: req.body,
   });
   ok(res, updated, "Candidate profile updated");
 }
@@ -82,10 +84,11 @@ export async function getCompanyProfile(req: Request, res: Response): Promise<vo
 
 export async function updateCompanyProfile(req: Request, res: Response): Promise<void> {
   if (!req.user) throw new NotFoundError();
-  const updated = await prisma.companyProfile.upsert({
+  // Registration always creates a profile row for COMPANY users (see the note
+  // in updateCandidateProfile above for why this must be `update`, not `upsert`).
+  const updated = await prisma.companyProfile.update({
     where: { userId: req.user.sub },
-    create: { userId: req.user.sub, ...req.body },
-    update: req.body,
+    data: req.body,
   });
   ok(res, updated, "Company profile updated");
 }

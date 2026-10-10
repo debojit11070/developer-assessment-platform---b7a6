@@ -103,47 +103,54 @@ export async function startAttempt(req: Request, res: Response): Promise<void> {
   if (!req.user) throw new ForbiddenError();
   const invitationId = req.params.invitationId;
 
-  return prisma.$transaction(async (tx) => {
-    const invitation = await tx.invitation.findUnique({
-      where: { id: invitationId },
-      include: { assessment: { include: { problems: { include: { problem: true } } } } },
-    });
-    if (!invitation) throw new NotFoundError("Invitation not found");
-    if (invitation.candidateId !== req.user!.sub) throw new ForbiddenError("Not your invitation");
-    if (invitation.status !== InvitationStatus.ACCEPTED) {
-      throw new BadRequestError("Invitation must be accepted first");
-    }
-    // Prevent duplicate attempts
-    const existing = await tx.attempt.findUnique({ where: { invitationId } });
-    if (existing) {
-      return ok(res, existing, "Attempt already started");
-    }
+  const invitation = await prisma.invitation.findUnique({
+    where: { id: invitationId },
+    include: { assessment: { include: { problems: true } } },
+  });
+  if (!invitation) throw new NotFoundError("Invitation not found");
+  if (invitation.candidateId !== req.user.sub) throw new ForbiddenError("Not your invitation");
+  if (invitation.status !== InvitationStatus.ACCEPTED) {
+    throw new BadRequestError("Invitation must be accepted first");
+  }
 
-    const expiresAt = new Date(
-      Date.now() + invitation.assessment.durationMin * 60 * 1000,
-    );
+  const existing = await prisma.attempt.findUnique({ where: { invitationId } });
+  if (existing) {
+    ok(res, existing, "Attempt already started");
+    return;
+  }
 
-    const attempt = await tx.attempt.create({
+  if (new Date() > invitation.expiresAt) {
+    throw new BadRequestError("Invitation expired");
+  }
+  if (invitation.assessment.deletedAt || invitation.assessment.status !== AssessmentStatus.PUBLISHED) {
+    throw new BadRequestError("Assessment is not available");
+  }
+
+  const expiresAt = new Date(Date.now() + invitation.assessment.durationMin * 60 * 1000);
+  const totalPoints = invitation.assessment.problems.reduce((sum, ap) => sum + ap.points, 0);
+
+  const attempt = await prisma.$transaction(async (tx) => {
+    const row = await tx.attempt.create({
       data: {
         invitationId,
         candidateId: invitation.candidateId,
         assessmentId: invitation.assessmentId,
         expiresAt,
-        totalPoints: invitation.assessment.problems.reduce((sum, ap) => sum + ap.points, 0),
+        totalPoints,
       },
     });
-
     await tx.auditLog.create({
       data: {
         actorId: req.user!.sub,
         action: "attempt.started",
         resource: "attempt",
-        resourceId: attempt.id,
+        resourceId: row.id,
       },
     });
+    return row;
+  });
 
-    return ok(res, attempt, "Attempt started", 201);
-  }).then(() => undefined).catch((e) => { throw e; });
+  created(res, attempt, "Attempt started");
 }
 
 export async function getMyAttemptByAssessment(req: Request, res: Response): Promise<void> {
@@ -194,46 +201,14 @@ export async function saveAnswer(req: Request, res: Response): Promise<void> {
   ok(res, answer, "Answer saved");
 }
 
-async function autoEvaluateMCQ(
-  attemptId: string,
-  assessmentId: string,
-): Promise<{ score: number; total: number }> {
-  const problems = await prisma.problem.findMany({
-    where: { assessmentProblems: { some: { assessmentId } } },
-  });
-  const answers = await prisma.answer.findMany({ where: { attemptId } });
-  let score = 0;
-  let total = 0;
-  for (const ap of problems) {
-    if (ap.type === "MCQ" && ap.correctOption) {
-      total += ap.points;
-      const ans = answers.find((a) => a.problemId === ap.id);
-      const correct = !!ans && ans.mcqOption === ap.correctOption;
-      if (correct) score += ap.points;
-      await prisma.answer.upsert({
-        where: { attemptId_problemId: { attemptId, problemId: ap.id } },
-        create: {
-          attemptId,
-          problemId: ap.id,
-          mcqOption: ans?.mcqOption,
-          isCorrect: correct,
-          pointsAwarded: correct ? ap.points : 0,
-        },
-        update: {
-          isCorrect: correct,
-          pointsAwarded: correct ? ap.points : 0,
-        },
-      });
-    }
-  }
-  return { score, total };
-}
-
 export async function submitAttempt(req: Request, res: Response): Promise<void> {
   if (!req.user) throw new ForbiddenError();
   const attempt = await prisma.attempt.findUnique({
     where: { id: req.params.attemptId },
-    include: { assessment: true },
+    include: {
+      assessment: { include: { problems: { include: { problem: true } } } },
+      answers: true,
+    },
   });
   if (!attempt) throw new NotFoundError("Attempt not found");
   if (attempt.candidateId !== req.user.sub) throw new ForbiddenError("Not your attempt");
@@ -241,28 +216,41 @@ export async function submitAttempt(req: Request, res: Response): Promise<void> 
     throw new BadRequestError("Attempt is not in progress");
   }
 
-  await prisma.$transaction(async (tx) => {
-    const { score, total } = await autoEvaluateMCQ(attempt.id, attempt.assessmentId);
+  const totalPoints = attempt.assessment.problems.reduce((sum, ap) => sum + ap.points, 0);
+  let score = 0;
 
-    const assessed = await tx.attempt.update({
-      where: { id: attempt.id },
+  await prisma.$transaction(async (tx) => {
+    for (const ap of attempt.assessment.problems) {
+      if (ap.problem.type !== "MCQ" || !ap.problem.correctOption) continue;
+      const answer = attempt.answers.find((a) => a.problemId === ap.problemId);
+      const correct = answer?.mcqOption === ap.problem.correctOption;
+      const pointsAwarded = correct ? ap.points : 0;
+      score += pointsAwarded;
+      await tx.answer.upsert({
+        where: { attemptId_problemId: { attemptId: attempt.id, problemId: ap.problemId } },
+        create: {
+          attemptId: attempt.id,
+          problemId: ap.problemId,
+          mcqOption: answer?.mcqOption,
+          isCorrect: correct,
+          pointsAwarded,
+        },
+        update: { isCorrect: correct, pointsAwarded },
+      });
+    }
+
+    const passed = totalPoints > 0 && Math.round((score / totalPoints) * 100) >= attempt.assessment.passingScore;
+    const { count } = await tx.attempt.updateMany({
+      where: { id: attempt.id, status: AttemptStatus.IN_PROGRESS },
       data: {
         status: AttemptStatus.SUBMITTED,
         submittedAt: new Date(),
         score,
-        totalPoints: total || attempt.totalPoints,
+        totalPoints,
+        passed,
       },
     });
-
-    if (assessed.totalPoints && assessed.totalPoints > 0) {
-      const pct = Math.round((score / assessed.totalPoints) * 100);
-      await tx.attempt.update({
-        where: { id: attempt.id },
-        data: {
-          passed: pct >= attempt.assessment.passingScore,
-        },
-      });
-    }
+    if (count === 0) throw new BadRequestError("Attempt is not in progress");
 
     await tx.auditLog.create({
       data: {
@@ -308,7 +296,10 @@ export async function evaluateAttempt(req: Request, res: Response): Promise<void
     let totalScore = attempt.score ?? 0;
     for (const m of manual) {
       const ap = attempt.assessment.problems.find((p) => p.problemId === m.problemId);
-      if (!ap) continue;
+      if (!ap) throw new BadRequestError(`Problem ${m.problemId} is not part of this assessment`);
+      if (m.pointsAwarded > ap.points) {
+        throw new BadRequestError(`pointsAwarded for ${m.problemId} exceeds the maximum of ${ap.points}`);
+      }
       const previous = await tx.answer.findUnique({
         where: { attemptId_problemId: { attemptId: attempt.id, problemId: m.problemId } },
       });

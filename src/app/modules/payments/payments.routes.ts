@@ -4,6 +4,7 @@ import { auth, authorize } from "../../middlewares/auth.js";
 import { validateBody } from "../../middlewares/validate.js";
 import { initiatePaymentSchema } from "./payments.validation.js";
 import { paymentsLimiter } from "../../middlewares/rateLimit.js";
+import { catchAsync } from "../../utils/asyncHandler.js";
 
 const router = Router();
 
@@ -13,14 +14,14 @@ router.post(
   authorize("CANDIDATE", "COMPANY"),
   paymentsLimiter,
   validateBody(initiatePaymentSchema),
-  ctrl.initiatePayment,
+  catchAsync(ctrl.initiatePayment),
 );
-router.get("/:id", auth, ctrl.getPaymentById);
-router.get("/me/list", auth, ctrl.myPayments);
-router.get("/success", ctrl.paymentSuccess);
-router.get("/cancel", ctrl.paymentCancel);
+router.get("/success", catchAsync(ctrl.paymentSuccess));
+router.get("/cancel", catchAsync(ctrl.paymentCancel));
+router.get("/me/list", auth, catchAsync(ctrl.myPayments));
+router.get("/:id", auth, catchAsync(ctrl.getPaymentById));
 
 // Webhook: raw body is already parsed in app.ts via express.raw
-router.post("/webhook", ctrl.stripeWebhook);
+router.post("/webhook", catchAsync(ctrl.stripeWebhook));
 
 export default router;

@@ -47,9 +47,8 @@ export async function getProblemById(req: Request, res: Response): Promise<void>
   if (problem.type === "MCQ") {
     safe.correctOption = undefined;
   }
-  if (problem.type === "CODING") {
-    safe.testCases = (problem.testCases as unknown[]) ?? [];
-  }
+  const cases = (problem.testCases as Array<{ isHidden?: boolean }> | null) ?? [];
+  safe.testCases = cases.filter((tc) => !tc.isHidden);
   if (problem.type === "WRITTEN") {
     safe.referenceAnswer = undefined;
   }

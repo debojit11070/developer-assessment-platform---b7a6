@@ -3,6 +3,7 @@ import { z } from "zod";
 import * as ctrl from "./attempts.controller.js";
 import { auth, authorize } from "../../middlewares/auth.js";
 import { validateBody } from "../../middlewares/validate.js";
+import { catchAsync } from "../../utils/asyncHandler.js";
 import {
   createInvitationSchema,
   evaluateAttemptSchema,
@@ -19,20 +20,20 @@ router.post(
   auth,
   authorize("COMPANY", "ADMIN"),
   validateBody(createInvitationSchema),
-  ctrl.createInvitation,
+  catchAsync(ctrl.createInvitation),
 );
 router.get(
   "/invitations/me",
   auth,
   authorize("CANDIDATE"),
-  ctrl.listMyInvitations,
+  catchAsync(ctrl.listMyInvitations),
 );
 router.post(
   "/invitations/:action(accept|decline)",
   auth,
   authorize("CANDIDATE"),
   validateBody(invitationIdSchema),
-  ctrl.respondToInvitation,
+  catchAsync(ctrl.respondToInvitation),
 );
 
 // Attempts
@@ -40,39 +41,39 @@ router.post(
   "/attempts/start/:invitationId",
   auth,
   authorize("CANDIDATE"),
-  ctrl.startAttempt,
+  catchAsync(ctrl.startAttempt),
 );
 router.get(
   "/attempts/assessment/:assessmentId/me",
   auth,
   authorize("CANDIDATE"),
-  ctrl.getMyAttemptByAssessment,
+  catchAsync(ctrl.getMyAttemptByAssessment),
 );
 router.post(
   "/attempts/:attemptId/answer",
   auth,
   authorize("CANDIDATE"),
   validateBody(submitAnswerSchema),
-  ctrl.saveAnswer,
+  catchAsync(ctrl.saveAnswer),
 );
 router.post(
   "/attempts/:attemptId/submit",
   auth,
   authorize("CANDIDATE"),
-  ctrl.submitAttempt,
+  catchAsync(ctrl.submitAttempt),
 );
 router.post(
   "/attempts/:attemptId/evaluate",
   auth,
   authorize("COMPANY", "ADMIN"),
   validateBody(evaluateAttemptSchema),
-  ctrl.evaluateAttempt,
+  catchAsync(ctrl.evaluateAttempt),
 );
 router.get(
   "/attempts/assessment/:assessmentId/all",
   auth,
   authorize("COMPANY", "ADMIN"),
-  ctrl.listAttemptsForAssessment,
+  catchAsync(ctrl.listAttemptsForAssessment),
 );
 
 export default router;

@@ -9,13 +9,22 @@ function required(name: string): string {
   return value;
 }
 
+const isProd = process.env.NODE_ENV === "production";
+
+function jwtSecret(name: string, devFallback: string): string {
+  const value = process.env[name];
+  if (value) return value;
+  if (isProd) throw new Error(`Missing required environment variable: ${name}`);
+  return devFallback;
+}
+
 export const config = {
   port: Number(process.env.PORT ?? 5000),
   nodeEnv: process.env.NODE_ENV ?? "development",
 
   jwt: {
-    accessSecret: process.env.JWT_ACCESS_SECRET || "dev_access_secret",
-    refreshSecret: process.env.JWT_REFRESH_SECRET || "dev_refresh_secret",
+    accessSecret: jwtSecret("JWT_ACCESS_SECRET", "dev_access_secret"),
+    refreshSecret: jwtSecret("JWT_REFRESH_SECRET", "dev_refresh_secret"),
     accessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN || "1h",
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "7d",
   },

@@ -31,6 +31,15 @@ export function errorHandler(
       fail(res, "Resource not found", 404);
       return;
     }
+    if (err.code === "P2003") {
+      fail(res, "Referenced resource does not exist", 400);
+      return;
+    }
+  }
+  const status = (err as { status?: unknown }).status;
+  if (typeof status === "number" && status >= 400 && status < 500) {
+    fail(res, err.message || "Bad request", status);
+    return;
   }
   // eslint-disable-next-line no-console
   console.error("[UNHANDLED ERROR]", err);

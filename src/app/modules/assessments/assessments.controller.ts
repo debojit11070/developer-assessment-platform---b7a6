@@ -2,7 +2,12 @@ import type { Request, Response } from "express";
 import { AssessmentStatus, Prisma } from "@prisma/client";
 import { prisma } from "../../../config/prisma.js";
 import { ok, created } from "../../utils/response.js";
-import { BadRequestError, ForbiddenError, NotFoundError } from "../../utils/errors.js";
+import {
+  BadRequestError,
+  ForbiddenError,
+  NotFoundError,
+  UnauthorizedError,
+} from "../../utils/errors.js";
 import type {
   CreateAssessmentDto,
   ListAssessmentsQuery,
@@ -18,17 +23,24 @@ function getQ(req: Request): ListAssessmentsQuery {
   };
 }
 
+async function assertProblemsExist(problemIds: string[]): Promise<void> {
+  const unique = new Set(problemIds);
+  if (unique.size !== problemIds.length) {
+    throw new BadRequestError("Duplicate problems are not allowed in an assessment");
+  }
+  const found = await prisma.problem.count({
+    where: { id: { in: problemIds }, deletedAt: null },
+  });
+  if (found !== unique.size) {
+    throw new BadRequestError("One or more problems not found");
+  }
+}
+
 export async function createAssessment(req: Request, res: Response): Promise<void> {
   if (!req.user) throw new ForbiddenError();
   const data: CreateAssessmentDto = req.body;
 
-  // Ensure all problems exist
-  const found = await prisma.problem.findMany({
-    where: { id: { in: data.problems.map((p) => p.problemId) }, deletedAt: null },
-  });
-  if (found.length !== data.problems.length) {
-    throw new BadRequestError("One or more problems not found");
-  }
+  await assertProblemsExist(data.problems.map((p) => p.problemId));
 
   const assessment = await prisma.$transaction(async (tx) => {
     const a = await tx.assessment.create({
@@ -67,6 +79,10 @@ export async function createAssessment(req: Request, res: Response): Promise<voi
   created(res, assessment, "Assessment created");
 }
 
+function canViewUnpublished(req: Request, createdById: string): boolean {
+  return !!req.user && (req.user.sub === createdById || req.user.role === "ADMIN");
+}
+
 export async function getAssessmentById(req: Request, res: Response): Promise<void> {
   const a = await prisma.assessment.findFirst({
     where: { id: req.params.id, deletedAt: null },
@@ -93,16 +109,20 @@ export async function getAssessmentById(req: Request, res: Response): Promise<vo
       createdBy: { select: { id: true, fullName: true } },
     },
   });
-  if (!a) throw new NotFoundError("Assessment not found");
+  if (!a || (a.status !== AssessmentStatus.PUBLISHED && !canViewUnpublished(req, a.createdById))) {
+    throw new NotFoundError("Assessment not found");
+  }
   ok(res, a, "Assessment fetched");
 }
 
 export async function listAssessments(req: Request, res: Response): Promise<void> {
   const q = getQ(req);
-  const where: Prisma.AssessmentWhereInput = {
-    deletedAt: null,
-    status: q.status ?? AssessmentStatus.PUBLISHED,
-  };
+  const status = q.status ?? AssessmentStatus.PUBLISHED;
+  const where: Prisma.AssessmentWhereInput = { deletedAt: null, status };
+  if (status !== AssessmentStatus.PUBLISHED) {
+    if (!req.user) throw new UnauthorizedError("Authentication required to list unpublished assessments");
+    if (req.user.role !== "ADMIN") where.createdById = req.user.sub;
+  }
   if (q.search) {
     where.OR = [
       { title: { contains: q.search, mode: "insensitive" } },
@@ -143,6 +163,7 @@ export async function updateAssessment(req: Request, res: Response): Promise<voi
   if (existing.createdById !== req.user.sub && req.user.role !== "ADMIN") {
     throw new ForbiddenError("You can only update your own assessments");
   }
+  if (data.problems) await assertProblemsExist(data.problems.map((p) => p.problemId));
 
   const updated = await prisma.$transaction(async (tx) => {
     const a = await tx.assessment.update({

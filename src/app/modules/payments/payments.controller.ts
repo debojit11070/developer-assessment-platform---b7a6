@@ -4,7 +4,7 @@ import { PaymentPurpose, PaymentStatus } from "@prisma/client";
 import { prisma } from "../../../config/prisma.js";
 import { config } from "../../../config/env.js";
 import { ok, created } from "../../utils/response.js";
-import { BadRequestError, ForbiddenError, NotFoundError } from "../../utils/errors.js";
+import { AppError, BadRequestError, ForbiddenError, NotFoundError } from "../../utils/errors.js";
 
 const stripe = config.stripe.secretKey
   ? new Stripe(config.stripe.secretKey, {
@@ -36,8 +36,9 @@ export async function initiatePayment(req: Request, res: Response): Promise<void
   });
 
   if (!config.stripe.secretKey) {
+    if (config.isProd) throw new AppError("Payment provider is not configured", 503);
     // Local/dev shortcut: simulate successful payment when Stripe is not configured.
-    await prisma.payment.update({
+    const mocked = await prisma.payment.update({
       where: { id: payment.id },
       data: {
         status: PaymentStatus.SUCCEEDED,
@@ -45,7 +46,7 @@ export async function initiatePayment(req: Request, res: Response): Promise<void
       },
     });
     ok(res, {
-      payment,
+      payment: mocked,
       mode: "mock",
       message: "Stripe not configured — payment simulated",
     }, "Payment simulated", 201);
@@ -121,8 +122,8 @@ export async function paymentSuccess(req: Request, res: Response): Promise<void>
 export async function paymentCancel(req: Request, res: Response): Promise<void> {
   const sessionId = (req.query.session_id as string) ?? "";
   if (!sessionId) throw new BadRequestError("Missing session_id");
-  await prisma.payment.update({
-    where: { stripeSessionId: sessionId },
+  await prisma.payment.updateMany({
+    where: { stripeSessionId: sessionId, status: PaymentStatus.PENDING },
     data: { status: PaymentStatus.CANCELLED },
   });
   const payment = await prisma.payment.findUnique({ where: { stripeSessionId: sessionId } });
@@ -167,8 +168,8 @@ export async function stripeWebhook(req: Request, res: Response): Promise<void> 
   } else if (event.type === "checkout.session.expired") {
     const session = event.data.object as Stripe.Checkout.Session;
     if (session.id) {
-      await prisma.payment.update({
-        where: { stripeSessionId: session.id },
+      await prisma.payment.updateMany({
+        where: { stripeSessionId: session.id, status: PaymentStatus.PENDING },
         data: { status: PaymentStatus.CANCELLED },
       });
     }

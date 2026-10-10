@@ -7,31 +7,29 @@ import {
   updateCompanyProfileSchema,
 } from "./users.validation.js";
 import { validateBody } from "../../middlewares/validate.js";
+import { catchAsync } from "../../utils/asyncHandler.js";
 
 const router = Router();
 
-router.get("/me", auth, ctrl.getMe);
-router.patch("/me", auth, validateBody(updateMeSchema), ctrl.updateMe);
+router.get("/me", auth, catchAsync(ctrl.getMe));
+router.patch("/me", auth, validateBody(updateMeSchema), catchAsync(ctrl.updateMe));
 
-router.get(
-  "/candidates/:id/profile",
-  ctrl.getCandidateProfile,
-);
+router.get("/candidates/:id/profile", catchAsync(ctrl.getCandidateProfile));
 router.patch(
   "/candidates/me/profile",
   auth,
   authorize("CANDIDATE"),
   validateBody(updateCandidateProfileSchema),
-  ctrl.updateCandidateProfile,
+  catchAsync(ctrl.updateCandidateProfile),
 );
 
-router.get("/companies/:id/profile", ctrl.getCompanyProfile);
+router.get("/companies/:id/profile", catchAsync(ctrl.getCompanyProfile));
 router.patch(
   "/companies/me/profile",
   auth,
   authorize("COMPANY"),
   validateBody(updateCompanyProfileSchema),
-  ctrl.updateCompanyProfile,
+  catchAsync(ctrl.updateCompanyProfile),
 );
 
 export default router;
