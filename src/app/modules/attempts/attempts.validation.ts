@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const createInvitationSchema = z.object({
   assessmentId: z.string().uuid(),
-  candidateId: z.string().uuid(),
+  candidateEmail: z.string().email(),
   expiresInHours: z.number().int().min(1).max(720).default(72),
 });
 

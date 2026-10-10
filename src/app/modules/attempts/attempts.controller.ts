@@ -26,9 +26,9 @@ export async function createInvitation(req: Request, res: Response): Promise<voi
     throw new ForbiddenError("You can only invite to your own assessments");
   }
 
-  const candidate = await prisma.user.findUnique({ where: { id: data.candidateId } });
+  const candidate = await prisma.user.findUnique({ where: { email: data.candidateEmail } });
   if (!candidate || candidate.role !== "CANDIDATE") {
-    throw new BadRequestError("Candidate not found or invalid role");
+    throw new BadRequestError("No candidate account found for that email");
   }
 
   const expiresAt = new Date(Date.now() + data.expiresInHours * 60 * 60 * 1000);
@@ -36,7 +36,7 @@ export async function createInvitation(req: Request, res: Response): Promise<voi
   const invitation = await prisma.invitation.create({
     data: {
       assessmentId: data.assessmentId,
-      candidateId: data.candidateId,
+      candidateId: candidate.id,
       invitedById: req.user.sub,
       expiresAt,
     },
@@ -48,7 +48,7 @@ export async function createInvitation(req: Request, res: Response): Promise<voi
       action: "invitation.created",
       resource: "invitation",
       resourceId: invitation.id,
-      meta: { assessmentId: data.assessmentId, candidateId: data.candidateId },
+      meta: { assessmentId: data.assessmentId, candidateId: candidate.id },
     },
   });
 

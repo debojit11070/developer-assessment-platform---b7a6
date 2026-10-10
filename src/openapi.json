@@ -168,10 +168,10 @@
       },
       "InvitationCreate": {
         "type": "object",
-        "required": ["assessmentId", "candidateId"],
+        "required": ["assessmentId", "candidateEmail"],
         "properties": {
           "assessmentId": { "type": "string", "format": "uuid" },
-          "candidateId": { "type": "string", "format": "uuid" },
+          "candidateEmail": { "type": "string", "format": "email" },
           "expiresInHours": { "type": "integer", "minimum": 1, "maximum": 720, "default": 72 }
         }
       },
