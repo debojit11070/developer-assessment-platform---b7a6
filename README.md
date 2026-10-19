@@ -77,7 +77,7 @@ The platform models three distinct primary roles:
 
 ---
 
-## API surface (28 endpoints)
+## API surface (31 endpoints)
 
 All endpoints are mounted under `/api/v1`. All responses use:
 
@@ -144,7 +144,14 @@ All endpoints are mounted under `/api/v1`. All responses use:
 - `GET    /admin/dashboard-stats`    — Counts, revenue, recent signups, attempt status breakdown
 - `GET    /admin/audit-logs`         — System audit trail
 
-> Total: **28 endpoints** (well over the minimum 20 required).
+### AI (public, rate-limited)
+- `POST /ai/chat`                    — Support assistant. Body `{ messages: [{ role, content }] }` (max 12 messages, 1000 chars each). Streams Server-Sent Events: `data: {"text":"…"}` chunks, then `data: [DONE]`. Returns `503` if `GEMINI_API_KEY` is unset.
+- `GET  /ai/suggest?q=&limit=`       — Search-as-you-type assessment suggestions. Keyword/tag scoring, optionally re-ranked by the LLM (falls back silently to keyword order).
+- `GET  /ai/recommendations?assessmentId=&limit=` — Related assessments by tag/difficulty overlap. With a candidate token, also personalised from past attempts and excludes already-attempted assessments.
+
+Set `GEMINI_API_KEY` (and optionally `AI_MODEL`) to enable the LLM parts. The key is read server-side only.
+
+> Total: **31 endpoints** (well over the minimum 20 required).
 
 ---
 

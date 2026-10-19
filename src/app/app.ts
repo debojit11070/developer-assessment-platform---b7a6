@@ -11,6 +11,7 @@ import assessmentRoutes from "./modules/assessments/assessments.routes.js";
 import attemptRoutes from "./modules/attempts/attempts.routes.js";
 import paymentRoutes from "./modules/payments/payments.routes.js";
 import adminRoutes from "./modules/admin/admin.routes.js";
+import aiRoutes from "./modules/ai/ai.routes.js";
 import docsRoutes from "./modules/docs/docs.routes.js";
 import { ok } from "./utils/response.js";
 
@@ -63,6 +64,7 @@ export function createApp(): Application {
   app.use("/api/v1", attemptRoutes);
   app.use("/api/v1/payments", paymentRoutes);
   app.use("/api/v1/admin", adminRoutes);
+  app.use("/api/v1/ai", aiRoutes);
 
   app.use("/api/docs", docsRoutes);
 

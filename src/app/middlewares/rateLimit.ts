@@ -32,3 +32,25 @@ export const paymentsLimiter = rateLimit({
     message: "Too many payment attempts, please try again later.",
   },
 });
+
+export const aiChatLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Too many AI requests, please try again later.",
+  },
+});
+
+export const aiSuggestLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Too many suggestion requests, please slow down.",
+  },
+});

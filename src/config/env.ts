@@ -26,6 +26,12 @@ export const config = {
     publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || "",
   },
 
+  ai: {
+    apiKey: process.env.GEMINI_API_KEY || "",
+    model: process.env.AI_MODEL || "gemini-3.8-flash",
+    chatMaxTokens: Number(process.env.AI_CHAT_MAX_TOKENS ?? 500),
+  },
+
   app: {
     baseUrl: process.env.APP_BASE_URL || "http://localhost:5000",
   },
